@@ -25,7 +25,7 @@
   {$ELSEIF Defined(VER170)} // Delphi 2005 (=9)
     {$DEFINE DELPHI_9}
     {$DEFINE DELPHI_7_UP}
-    {$DEFINE DELPHI_9_UP}    
+    {$DEFINE DELPHI_9_UP}
   {$ELSEIF Defined(VER150)}
     {$DEFINE DELPHI_7}
     {$DEFINE DELPHI_7_UP}
@@ -87,9 +87,6 @@
   {$DEFINE UseSDLPlayback}
   {.$DEFINE UsePortaudioPlayback}
   {$DEFINE UsePortaudioInput}
-  {$IFDEF HavePortmixer}
-    {$DEFINE UsePortmixer}
-  {$ENDIF}
 {$ELSE}
   {$DEFINE UseSDLPlayback}
   {$DEFINE UseSDLInput}

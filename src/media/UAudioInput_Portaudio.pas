@@ -41,9 +41,6 @@ uses
 implementation
 
 uses
-  {$IFDEF UsePortmixer}
-  portmixer,
-  {$ENDIF}
   portaudio,
   ctypes,
   UAudioCore_Portaudio,
@@ -68,9 +65,6 @@ type
   TPortaudioInputDevice = class(TAudioInputDevice)
     private
       RecordStream: PPaStream;
-      {$IFDEF UsePortmixer}
-      Mixer: PPxMixer;
-      {$ENDIF}
       PaDeviceIndex:  TPaDeviceIndex;
     public
       function Open():  boolean;
@@ -95,14 +89,14 @@ function MicrophoneTestCallback(input: pointer; output: pointer; frameCount: cul
 {**
  * Converts a string returned by Portaudio into UTF8.
  * If the string already is in UTF8 no conversion is performed, otherwise
- * the local encoding is used. 
+ * the local encoding is used.
  *}
 function ConvertPaStringToUTF8(const Str: RawByteString): UTF8String;
 begin
   if (IsUTF8String(Str)) then
     Result := Str
   else
-    Result := DecodeStringUTF8(Str, encLocale);  
+    Result := DecodeStringUTF8(Str, encLocale);
 end;
 
 
@@ -140,9 +134,6 @@ var
   Error:       TPaError;
   inputParams: TPaStreamParameters;
   deviceInfo:  PPaDeviceInfo;
-  {$IFDEF UsePortmixer}
-  SourceIndex: integer;
-  {$ENDIF}
 begin
   Result := false;
 
@@ -172,31 +163,6 @@ begin
     Log.LogError('Error opening stream: ' + Pa_GetErrorText(Error), 'TPortaudioInputDevice.Open');
     Exit;
   end;
-
-  {$IFDEF UsePortmixer}
-    // open default mixer
-    Mixer := Px_OpenMixer(RecordStream, 0);
-    if (Mixer = nil) then
-    begin
-      Log.LogError('Error opening mixer: ' + Pa_GetErrorText(Error), 'TPortaudioInputDevice.Open');
-    end
-    else
-    begin
-      // save current source selection and select new source
-      SourceIndex := Ini.InputDeviceConfig[CfgIndex].Input-1;
-      if (SourceIndex = -1) then
-      begin
-        // nothing to do if default source is used
-        SourceRestore := -1;
-      end
-      else
-      begin
-        // store current source-index and select new source
-        SourceRestore := Px_GetCurrentInputSource(Mixer); // -1 in error case
-        Px_SetCurrentInputSource(Mixer, SourceIndex);
-      end;
-    end;
-  {$ENDIF}
 
   Result := true;
 end;
@@ -253,21 +219,6 @@ function TPortaudioInputDevice.Close(): boolean;
 var
   Error: TPaError;
 begin
-  {$IFDEF UsePortmixer}
-    if (Mixer <> nil) then
-    begin
-      // restore source selection
-      if (SourceRestore >= 0) then
-      begin
-        Px_SetCurrentInputSource(Mixer, SourceRestore);
-      end;
-
-      // close mixer
-      Px_CloseMixer(Mixer);
-      Mixer := nil;
-    end;
-  {$ENDIF}
-
   Error := Pa_CloseStream(RecordStream);
   if (Error <> paNoError) then
   begin
@@ -285,25 +236,10 @@ end;
 function TPortaudioInputDevice.GetVolume(): single;
 begin
   Result := 0;
-  {$IFDEF UsePortmixer}
-    if (Mixer <> nil) then
-      Result := Px_GetInputVolume(Mixer);
-  {$ENDIF}
 end;
 
 procedure TPortaudioInputDevice.SetVolume(Volume: single);
 begin
-  {$IFDEF UsePortmixer}
-    if (Mixer <> nil) then
-    begin
-      // clip to valid range
-      if (Volume > 1.0) then
-        Volume := 1.0
-      else if (Volume < 0) then
-        Volume := 0;
-      Px_SetInputVolume(Mixer, Volume);
-    end;
-  {$ENDIF}
 end;
 
 
@@ -332,12 +268,6 @@ var
   streamInfo:   PPaStreamInfo;
   sampleRate:   double;
   latency:      TPaTime;
-  {$IFDEF UsePortmixer}
-  mixer:        PPxMixer;
-  sourceCnt:    integer;
-  sourceIndex:  integer;
-  sourceName:   UTF8String;
-  {$ENDIF}
 const
   MIN_TEST_LATENCY = 100 / 1000; // min. test latency of 100 ms to avoid removal of working devices
 begin
@@ -431,7 +361,7 @@ begin
         sampleRate := streamInfo^.sampleRate;
       end;
     end;
-    
+
     // create audio-format info and resize capture-buffer array
     paDevice.AudioFormat := TAudioFormatInfo.Create(
         channelCnt,
@@ -453,24 +383,6 @@ begin
     // add a virtual default source (will not change mixer-settings)
     SetLength(paDevice.Source, 1);
     paDevice.Source[0].Name := DEFAULT_SOURCE_NAME;
-
-    {$IFDEF UsePortmixer}
-      // use default mixer
-      mixer := Px_OpenMixer(stream, 0);
-
-      // get input count
-      sourceCnt := Px_GetNumInputSources(mixer);
-      SetLength(paDevice.Source, sourceCnt+1);
-
-      // get input names
-      for sourceIndex := 1 to sourceCnt do
-      begin
-        sourceName := Px_GetInputSourceName(mixer, sourceIndex-1);
-        paDevice.Source[sourceIndex].Name := ConvertPaStringToUTF8(sourceName);
-      end;
-
-      Px_CloseMixer(mixer);
-    {$ENDIF}
 
     // close test-stream
     Pa_CloseStream(stream);

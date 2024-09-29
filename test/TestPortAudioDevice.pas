@@ -46,13 +46,10 @@ const
 
   ApiPreferenceOrder:
 {$IF Defined(MSWINDOWS)}
-    // Note1: Portmixer has no mixer support for paASIO and paWASAPI at the moment
-    // Note2: Windows Default-API is MME, but DirectSound is faster
-    array[0..0] of TPaHostApiTypeId = ( paDirectSound );
+    array[0..0] of TPaHostApiTypeId = ( paDirectSound, paWASAPI, paASIO );
 {$ELSEIF Defined(DARWIN)}
     array[0..0] of TPaHostApiTypeId = ( paDefaultApi ); // paCoreAudio
 {$ELSEIF Defined(UNIX)}
-    // Note: Portmixer has no mixer support for JACK at the moment
     array[0..2] of TPaHostApiTypeId = ( paALSA, paJACK, paOSS );
 {$ELSE}
     array[0..0] of TPaHostApiTypeId = ( paDefaultApi );
@@ -198,7 +195,7 @@ begin
   else
     writeln ('Pa_Initialize: Error No ', PaError);
 
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   if PaError = paNoError then
     writeln ('Pa_Terminate:  No error')
   else
@@ -220,7 +217,7 @@ begin
     i := succ(i);
   until SameText(Pa_GetErrorText(i), 'Invalid error code') or (i = paNotInitialized + 100);
   writeln (i:6, ' ', Pa_GetErrorText(i));
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 end;
 
@@ -230,7 +227,7 @@ begin
   PaError := Pa_Initialize;
   writeln ('Pa_GetVersion:     ', Pa_GetVersion);
   writeln ('Pa_GetVersionText: ', Pa_GetVersionText);
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 end;
 
@@ -243,7 +240,7 @@ begin
     writeln ('GetPreferredApiIndex: No working Audio-API found.')
   else
     writeln ('GetPreferredApiIndex: working Audio-API found. No: ', paApiIndex);
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 
   writeln ('*** Test of Pa_GetHostApiInfo ***');
@@ -257,7 +254,7 @@ begin
   writeln ('paApiInfo.deviceCount:         ', paApiInfo.deviceCount);
   writeln ('paApiInfo.defaultInputDevice:  ', paApiInfo.defaultInputDevice);
   writeln ('paApiInfo.defaultOutputDevice: ', paApiInfo.defaultOutputDevice);
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 
   writeln ('*** Test of Pa_HostApiDeviceIndexToDeviceIndex ***');
@@ -269,7 +266,7 @@ begin
     deviceIndex := Pa_HostApiDeviceIndexToDeviceIndex(paApiIndex, i);
     writeln ('deviceIndex[', i, ']: ', deviceIndex);
   end;
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 end;
 
@@ -278,19 +275,19 @@ begin
   writeln ('*** Test of Pa_GetDeviceCount ***');
   PaError := Pa_Initialize;
   writeln ('Pa_GetDeviceCount: ', Pa_GetDeviceCount);
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 
   writeln ('*** Test of Pa_GetDefaultInputDevice ***');
   PaError := Pa_Initialize;
   writeln ('Pa_GetDefaultInputDevice: ', Pa_GetDefaultInputDevice);
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 
   writeln ('*** Test of Pa_GetDefaultOutputDevice ***');
   PaError := Pa_Initialize;
   writeln ('Pa_GetDefaultOutputDevice: ', Pa_GetDefaultOutputDevice);
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
   writeln;
 
   writeln ('*** Test of Pa_GetDeviceInfo ***');
@@ -315,7 +312,7 @@ begin
     writeln ('deviceInfo[', i, '].defaultSampleRate:        ', deviceInfo^.defaultSampleRate:5:0);
     writeln;
   end;
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
 end;
 
 procedure TestFormatInfo();
@@ -359,7 +356,7 @@ begin
       writeln ('Sample rate: ', sampleRate:5:0, ' : Error: ', Pa_GetErrorText(PaError));
 
     for j := low(standardSampleRates) to high(standardSampleRates) do
-    begin 
+    begin
       sampleRate := standardSampleRates[j];
       PaError    := Pa_IsFormatSupported(inputParameters, outputParameters, sampleRate);
       if PaError = paFormatIsSupported then
@@ -370,7 +367,7 @@ begin
 
     writeln;
     for j := low(SampleFormat) to high(SampleFormat) do
-    begin 
+    begin
       if inputParameters <> nil then
         inputParameters^.sampleFormat := SampleFormat[j]
       else
@@ -386,7 +383,7 @@ begin
     Dispose(outputParameters);
     writeln;
   end;
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
 end;
 
 function AudioCallback(input: pointer; output: pointer; frameCount: culong;
@@ -436,7 +433,7 @@ begin
       outputParameters^.suggestedLatency          := deviceInfo.defaultLowOutputLatency;
       outputParameters^.hostApiSpecificStreamInfo := nil;
     end;
-      
+
     sampleRate      := deviceInfo^.defaultSampleRate;
     framesPerBuffer := paFramesPerBufferUnspecified;
     streamFlags     := paNoFlag;
@@ -451,7 +448,7 @@ begin
                      framesPerBuffer,
                      streamFlags,
                      streamCallback,
-                     userData 
+                     userData
 		     );
     if (PaError = paNoError) and (stream <> nil) then
       writeln ('Pa_OpenStream: success')
@@ -503,10 +500,10 @@ begin
 
     Dispose(inputParameters);
     Dispose(outputParameters);
-    
-    writeln;    
+
+    writeln;
   end;
-  PaError := Pa_Terminate; 
+  PaError := Pa_Terminate;
 end;
 
 begin
@@ -517,12 +514,12 @@ begin
   writeln;
 
   //TestInitTerminate();
-  //TestErrorText(); 
+  //TestErrorText();
   //TestVersion();
   //TestApiInfo();
   //TestDeviceInfo();
   //TestFormatInfo();
   TestStreams();
-  
+
   writeln ('End: Test of Portaudio libs');
 end.

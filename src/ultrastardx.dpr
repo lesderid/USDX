@@ -82,9 +82,6 @@ uses
   portaudio              in 'lib\portaudio\portaudio.pas',
   UAudioCore_Portaudio   in 'media\UAudioCore_Portaudio.pas',
   {$ENDIF}
-  {$IFDEF UsePortmixer}
-  portmixer              in 'lib\portmixer\portmixer.pas',
-  {$ENDIF}
   {$IFDEF UsePortMidi}
   portmidi               in 'lib\portmidi\portmidi.pp',
   {$ENDIF}
@@ -203,7 +200,7 @@ uses
   //Includes - base
   //------------------------------
   UConfig           in 'base\UConfig.pas',
-  
+
   UCommon           in 'base\UCommon.pas',
   UGraphic          in 'base\UGraphic.pas',
   UTexture          in 'base\UTexture.pas',

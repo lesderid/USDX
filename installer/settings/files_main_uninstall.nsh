@@ -28,7 +28,7 @@
  Delete "$INSTDIR\screenshots.lnk"
  Delete "$INSTDIR\playlists.lnk"
  Delete "$INSTDIR\config.ini.lnk"
- 
+
  ; delete third party licenses
  Delete "$INSTDIR\LICENSE*"
  Delete "$INSTDIR\README.ijg"
@@ -66,7 +66,6 @@
  Delete "$INSTDIR\opengl32_.dll"
  Delete "$INSTDIR\pcre3.dll"
  Delete "$INSTDIR\portaudio_x86.dll"
- Delete "$INSTDIR\portmixer.dll"
  Delete "$INSTDIR\postproc-53.dll"
  Delete "$INSTDIR\projectM-cwrapper.dll"
  Delete "$INSTDIR\SDL2.dll"
@@ -101,7 +100,7 @@
  Delete "$INSTDIR\swscale-8.dll"
 
  StrCpy $0 "$INSTDIR\songs"
- Call un.DeleteIfEmpty 
+ Call un.DeleteIfEmpty
 
  StrCpy $0 "$INSTDIR\covers"
  Call un.DeleteIfEmpty
@@ -120,7 +119,7 @@
  Delete "$APPDATA\ultrastardx\Benchmark.log"
  Delete "$APPDATA\ultrastardx\cover.db"
  Delete "$APPDATA\ultrastardx\avatar.db"
- 
+
  StrCpy $0 "$APPDATA\ultrastardx\covers"
  Call un.DeleteIfEmpty
 

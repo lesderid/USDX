@@ -77,8 +77,6 @@ IfFileExists $INSTDIR\postproc-55.dll 0 +2
 Delete "$INSTDIR\postproc-55.dll"
 IfFileExists $INSTDIR\libfreetype6.dll 0 +2
 Delete "$INSTDIR\libfreetype6.dll"
-IfFileExists $INSTDIR\portmixer.dll 0 +2
-Delete "$INSTDIR\portmixer.dll"
 IfFileExists $INSTDIR\libprojectM2.dll 0 +2
 Delete "$INSTDIR\libprojectM2.dll"
 IfFileExists $INSTDIR\lua5.1.dll 0 +2
@@ -117,7 +115,7 @@ CreateDirectory $INSTDIR\avatars
 ${If} $UseAppData == true
 
   ; Create folders in appdata for current user
-  SetShellVarContext current		
+  SetShellVarContext current
   CreateDirectory $UserDataPath
   CreateDirectory $UserDataPath\screenshots
   CreateDirectory $UserDataPath\playlists

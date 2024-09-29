@@ -76,8 +76,6 @@
   PORTAUDIO_VERSION_RELEASE = 0;
 {$IFEND}
 
-{$UNDEF HavePortmixer}
-
 {$UNDEF HaveLibsamplerate}
 {$IF Defined(HaveLibsamplerate) and Defined(IncludeConstants)}
   LIBSAMPLERATE_VERSION_MAJOR   = 0;

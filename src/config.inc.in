@@ -1,4 +1,4 @@
-{***************************************************************** 
+{*****************************************************************
  * Configuration file for @PACKAGE_STRING@
  * @configure_input@
  *****************************************************************}
@@ -89,7 +89,6 @@
   PORTAUDIO_VERSION_RELEASE = @portaudio_VERSION_RELEASE@;
 {$IFEND}
 
-{$@DEFINE_HAVE_PORTMIXER@ HavePortmixer}
 {$@DEFINE_HAVE_PORTMIDI@ UsePortMidi}
 {$IF Defined(UsePortMidi)}
   {$DEFINE UseMIDIPort}
