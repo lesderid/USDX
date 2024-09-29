@@ -75,7 +75,7 @@ const
 const
   ApiPreferenceOrder:
 {$IF Defined(MSWINDOWS)}
-    array[0..0] of TPaHostApiTypeId = ( paDirectSound, paWASAPI, paASIO );
+    array[0..2] of TPaHostApiTypeId = ( paASIO, paWASAPI, paDirectSound );
 {$ELSEIF Defined(DARWIN)}
     array[0..0] of TPaHostApiTypeId = ( paDefaultApi ); // paCoreAudio
 {$ELSEIF Defined(UNIX)}
