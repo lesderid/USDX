@@ -50,10 +50,9 @@
   {$IFDEF DEBUG}
     // windows apps are either GUI- or console-apps. Console-apps will open
     // an additional console-window for output. For development only!
-    {$DEFINE CONSOLE}
   {$ENDIF}
 
-  {$DEFINE HaveBASS}
+  {$DEFINE HavePortaudio}
 {$ELSEIF Defined(DARWIN)}
   // include defines but no constants
   {$I config-darwin.inc}
@@ -79,13 +78,8 @@
 {$IFEND}
 
 // audio config
-{$IF Defined(HaveBASS)}
-  {$DEFINE UseBASSPlayback}
-  {$DEFINE UseBASSDecoder}
-  {$DEFINE UseBASSInput}
-{$ELSEIF Defined(HavePortaudio)}
-  {$DEFINE UseSDLPlayback}
-  {.$DEFINE UsePortaudioPlayback}
+{$IF Defined(HavePortaudio)}
+  {$DEFINE UsePortaudioPlayback}
   {$DEFINE UsePortaudioInput}
 {$ELSE}
   {$DEFINE UseSDLPlayback}
