@@ -316,6 +316,8 @@ begin
     else
       latency := MIN_TEST_LATENCY;
 
+    channelCnt := 1;
+
     // setup desired input parameters
     with inputParams do
     begin

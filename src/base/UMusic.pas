@@ -243,7 +243,7 @@ type
       function GetName: string; virtual; abstract;
 
   end;
-  
+
   TReplayGain = class(TSoundFX)
   end;
 
@@ -799,21 +799,6 @@ begin
   AudioDecoderList := TInterfaceList.Create;
   FilterInterfaceList(IAudioDecoder, MediaManager, AudioDecoders);
 
-  // find and initialize playback interface
-  DefaultAudioPlayback := nil;
-  FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
-  for i := 0 to InterfaceList.Count-1 do
-  begin
-    CurrentAudioPlayback := InterfaceList[i] as IAudioPlayback;
-    if (CurrentAudioPlayback.InitializePlayback()) then
-    begin
-      DefaultAudioPlayback := CurrentAudioPlayback;
-      break;
-    end;
-    Log.LogError('Initialize failed, Removing playback: '+ CurrentAudioPlayback.GetName);
-    MediaManager.Remove(CurrentAudioPlayback);
-  end;
-
   // find and initialize input interface
   DefaultAudioInput := nil;
   FilterInterfaceList(IAudioInput, MediaManager, InterfaceList);
@@ -827,6 +812,21 @@ begin
     end;
     Log.LogError('Initialize failed, Removing input: '+ CurrentAudioInput.GetName);
     MediaManager.Remove(CurrentAudioInput);
+  end;
+
+  // find and initialize playback interface
+  DefaultAudioPlayback := nil;
+  FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
+  for i := 0 to InterfaceList.Count-1 do
+  begin
+    CurrentAudioPlayback := InterfaceList[i] as IAudioPlayback;
+    if (CurrentAudioPlayback.InitializePlayback()) then
+    begin
+      DefaultAudioPlayback := CurrentAudioPlayback;
+      break;
+    end;
+    Log.LogError('Initialize failed, Removing playback: '+ CurrentAudioPlayback.GetName);
+    MediaManager.Remove(CurrentAudioPlayback);
   end;
 
   InterfaceList.Free;
