@@ -36,12 +36,20 @@ interface
 uses
   Classes,
   SysUtils,
-  portaudio;
+  portaudio,
+  UAudioPlayback_SoftMixer,
+  URecord;
 
 type
   TAudioCore_Portaudio = class
     private
       InitCount: integer; ///< keeps track of the number of Initialize/Terminate calls
+      SharedStream: PPaStream;
+      FPlaybackHandler: TAudioPlayback_SoftMixer;
+      FRecordingHandler: TAudioInputBase;
+      FLatency: Double;
+      function OpenSharedStream(): Boolean;
+      function CloseSharedStream(): Boolean;
     public
       constructor Create();
       class function GetInstance(): TAudioCore_Portaudio;
@@ -49,6 +57,11 @@ type
       function Terminate(): boolean;
       function GetPreferredApiIndex(): TPaHostApiIndex;
       function TestDevice(inParams, outParams: PPaStreamParameters; var sampleRate: double): boolean;
+      procedure SetPlaybackHandler(handler: TAudioPlayback_SoftMixer);
+      procedure SetRecordingHandler(handler: TAudioInputBase);
+      function GetLatency(): Double;
+      function StartStream(): Boolean;
+      procedure StopStream();
   end;
 
 implementation
@@ -83,7 +96,9 @@ const
 {$ELSE}
     array[0..0] of TPaHostApiTypeId = ( paDefaultApi );
 {$IFEND}
-
+  
+function PortaudioFullDuplexCallback(input: Pointer; output: Pointer; frameCount: LongWord;
+  timeInfo: PPaStreamCallbackTimeInfo; statusFlags: TPaStreamCallbackFlags; this: TAudioCore_Portaudio): cint; cdecl; forward;
 
 { TAudioInput_Portaudio }
 
@@ -94,6 +109,8 @@ constructor TAudioCore_Portaudio.Create();
 begin
   inherited;
   InitCount := 0;
+  SharedStream := nil;
+  FLatency := 0;
 end;
 
 class function TAudioCore_Portaudio.GetInstance(): TAudioCore_Portaudio;
@@ -340,6 +357,158 @@ begin
   {$IFEND}
 
   Result := cbWorks;
+end;
+
+function TAudioCore_Portaudio.OpenSharedStream(): Boolean;
+var
+  Err: TPaError;
+  InParams, OutParams: TPaStreamParameters;
+  SampleRate: Double;
+  PaApiIndex: TPaHostApiIndex;
+  PaApiInfo: PPaHostApiInfo;
+  DeviceInfo: PPaDeviceInfo;
+begin
+  Result := False;
+
+  PaApiIndex := GetPreferredApiIndex();
+  if PaApiIndex = -1 then
+  begin
+    Log.LogError('No working Audio-API found', 'TAudioCore_Portaudio.OpenSharedStream');
+    Exit;
+  end;
+
+  PaApiInfo := Pa_GetHostApiInfo(PaApiIndex);
+
+  // Set up input parameters
+  InParams.device := PaApiInfo^.defaultInputDevice;
+  InParams.channelCount := 1;
+  InParams.sampleFormat := paInt16;
+  DeviceInfo := Pa_GetDeviceInfo(InParams.device);
+  InParams.suggestedLatency := DeviceInfo^.defaultLowInputLatency;
+  InParams.hostApiSpecificStreamInfo := nil;
+
+  // Set up output parameters
+  OutParams.device := PaApiInfo^.defaultOutputDevice;
+  OutParams.channelCount := 2;
+  OutParams.sampleFormat := paInt16;
+  DeviceInfo := Pa_GetDeviceInfo(OutParams.device);
+  OutParams.suggestedLatency := DeviceInfo^.defaultLowOutputLatency;
+  OutParams.hostApiSpecificStreamInfo := nil;
+
+  // Use default sample rate
+  SampleRate := 44100;
+
+  // Open full-duplex stream
+  Err := Pa_OpenStream(@SharedStream, @InParams, @OutParams, SampleRate,
+    paFramesPerBufferUnspecified, paNoFlag, @PortaudioFullDuplexCallback, pointer(Self));
+
+  if Err <> paNoError then
+  begin
+    Log.LogError('Error opening shared stream: ' + Pa_GetErrorText(Err), 'TAudioCore_Portaudio.OpenSharedStream');
+    SharedStream := nil;
+    Exit;
+  end;
+
+  Result := True;
+end;
+
+function TAudioCore_Portaudio.CloseSharedStream(): Boolean;
+var
+  Err: TPaError;
+begin
+  Result := False;
+  if SharedStream = nil then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  Err := Pa_CloseStream(SharedStream);
+  if Err <> paNoError then
+  begin
+    Log.LogError('Error closing shared stream: ' + Pa_GetErrorText(Err), 'TAudioCore_Portaudio.CloseSharedStream');
+    Exit;
+  end;
+
+  SharedStream := nil;
+  Result := True;
+end;
+
+function PortaudioFullDuplexCallback(input: Pointer; output: Pointer; frameCount: LongWord;
+  timeInfo: PPaStreamCallbackTimeInfo; statusFlags: TPaStreamCallbackFlags; this: TAudioCore_Portaudio): cint; cdecl;
+begin
+  // Update latency
+  this.FLatency := timeInfo^.outputBufferDacTime - timeInfo^.currentTime;
+
+  // Handle recording
+  if Assigned(this.FRecordingHandler) then
+  begin
+    AudioInputProcessor.HandleMicrophoneData(input, frameCount * this.FRecordingHandler.AudioFormat.FrameSize, this.FRecordingHandler);
+  end;
+
+  // Handle playback
+  if Assigned(this.FPlaybackHandler) then
+  begin
+    this.FPlaybackHandler.AudioCallback(output, frameCount * this.FPlaybackHandler.FormatInfo.FrameSize);
+  end
+  else
+  begin
+    // If no playback handler, fill output with silence
+    FillChar(output^, frameCount * 2 * SizeOf(SmallInt), 0);
+  end;
+
+  Result := paContinue;
+end;
+
+procedure TAudioCore_Portaudio.SetPlaybackHandler(handler: TAudioPlayback_SoftMixer);
+begin
+  FPlaybackHandler := handler;
+end;
+
+procedure TAudioCore_Portaudio.SetRecordingHandler(handler: TAudioInputBase);
+begin
+  FRecordingHandler := handler;
+end;
+
+function TAudioCore_Portaudio.GetLatency(): Double;
+begin
+  Result := FLatency;
+end;
+
+function TAudioCore_Portaudio.StartStream(): Boolean;
+var
+  Err: TPaError;
+begin
+  Result := False;
+  if SharedStream = nil then
+  begin
+    if not OpenSharedStream() then
+      Exit;
+  end;
+
+  Err := Pa_StartStream(SharedStream);
+  if Err <> paNoError then
+  begin
+    Log.LogError('Error starting shared stream: ' + Pa_GetErrorText(Err), 'TAudioCore_Portaudio.StartStream');
+    Exit;
+  end;
+
+  Result := True;
+end;
+
+procedure TAudioCore_Portaudio.StopStream();
+var
+  Err: TPaError;
+begin
+  if SharedStream <> nil then
+  begin
+    Err := Pa_StopStream(SharedStream);
+    if Err <> paNoError then
+    begin
+      Log.LogError('Error stopping shared stream: ' + Pa_GetErrorText(Err), 'TAudioCore_Portaudio.StopStream');
+    end;
+    CloseSharedStream();
+  end;
 end;
 
 end.
